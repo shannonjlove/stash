@@ -1,0 +1,42 @@
+# Stash Podman Quadlet Template Configuration
+# Copy this file to stash.config and customize values
+# Then run: python3 generate-quadlet.py stash.config
+
+# Service Configuration
+DESCRIPTION=Stash - Self-hosted media server
+CONTAINER_NAME=stash
+IMAGE=stashapp/stash
+IMAGE_TAG=latest
+
+# Network Configuration
+PORT=9999
+TIMEZONE=Etc/UTC
+
+# Restart Policy
+RESTART_SEC=10s
+
+# Image Pull Policy (always, missing, or never)
+PULL_POLICY=always
+
+# Resource Limits (comment out to disable)
+# MEMORY_LIMIT=Memory=2g
+# MEMORY_SWAP_LIMIT=MemorySwap=4g
+# CPU_QUOTA=CPUQuota=80%
+
+# Data Paths (user-level defaults)
+CONFIG_PATH=%h/.stash/config
+DATA_PATH=%h/.stash/data
+METADATA_PATH=%h/.stash/metadata
+CACHE_PATH=%h/.stash/cache
+BLOBS_PATH=%h/.stash/blobs
+GENERATED_PATH=%h/.stash/generated
+
+# Environment Paths (used in Environment= directives)
+STASH_DATA_PATH=/data/
+STASH_GENERATED_PATH=/generated/
+STASH_METADATA_PATH=/metadata/
+STASH_CACHE_PATH=/cache/
+
+# systemd Install Target
+# Use: default.target (user) or multi-user.target (system)
+INSTALL_TARGET=default.target

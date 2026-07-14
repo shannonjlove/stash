@@ -1,0 +1,50 @@
+[Unit]
+Description={{DESCRIPTION}}
+Documentation=https://docs.stashapp.cc
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image={{IMAGE}}:{{IMAGE_TAG}}
+ContainerName={{CONTAINER_NAME}}
+Restart=always
+RestartPolicy=on-failure
+RestartSec={{RESTART_SEC}}
+
+# Network configuration
+PublishPort={{PORT}}:9999
+
+# Environment variables
+Environment=STASH_STASH={{STASH_DATA_PATH}}
+Environment=STASH_GENERATED={{STASH_GENERATED_PATH}}
+Environment=STASH_METADATA={{STASH_METADATA_PATH}}
+Environment=STASH_CACHE={{STASH_CACHE_PATH}}
+Environment=STASH_PORT=9999
+Environment=TZ={{TIMEZONE}}
+
+# Volume mounts
+Volume={{CONFIG_PATH}}:/root/.stash:rw
+Volume={{DATA_PATH}}:/data:rw
+Volume={{METADATA_PATH}}:/metadata:rw
+Volume={{CACHE_PATH}}:/cache:rw
+Volume={{BLOBS_PATH}}:/blobs:rw
+Volume={{GENERATED_PATH}}:/generated:rw
+
+# Logging configuration
+LogDriver=journald
+
+# Resource limits (adjust as needed)
+{{MEMORY_LIMIT}}
+{{MEMORY_SWAP_LIMIT}}
+{{CPU_QUOTA}}
+
+# Additional options
+RunInit=yes
+Pull={{PULL_POLICY}}
+
+[Service]
+Type=notify
+Notify=conmon
+
+[Install]
+WantedBy={{INSTALL_TARGET}}
