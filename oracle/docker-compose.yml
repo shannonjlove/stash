@@ -1,0 +1,216 @@
+version: '3.8'
+
+services:
+  # Jellyfin Media Server
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    hostname: jellyfin
+    restart: unless-stopped
+
+    # Network configuration
+    ports:
+      - "8096:8096"  # HTTP interface
+      - "8920:8920"  # HTTPS interface (optional)
+
+    # Environment variables
+    environment:
+      - JELLYFINDIR=/config
+      - JELLYFIN_CACHE_DIR=/cache
+      - JELLYFIN_LOG_DIR=/config/logs
+      - TZ=Etc/UTC
+      # Optional: for hardware acceleration (if supported)
+      # - NVIDIA_VISIBLE_DEVICES=all
+      # - JELLYFIN_FFMPEG_OPT=-hwaccel vaapi
+
+    # Resource limits (for Always Free tier)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1500M
+        reservations:
+          cpus: '0.5'
+          memory: 1000M
+
+    # Volumes
+    volumes:
+      # Configuration (persistent)
+      - jellyfin_config:/config
+
+      # Cache directory
+      - jellyfin_cache:/cache
+
+      # Media library - Mount local media
+      # Uncomment and adjust path to your media:
+      # - /mnt/media:/media:ro
+      # - /home/ubuntu/media:/media:ro
+
+      # Individual media folders (if not using block storage):
+      - /home/ubuntu/jellyfin/movies:/media/movies:ro
+      - /home/ubuntu/jellyfin/tv:/media/tv:ro
+      - /home/ubuntu/jellyfin/music:/media/music:ro
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8096/web/index.html"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    # Restart policy
+    restart_policy:
+      condition: on-failure
+      delay: 5s
+      max_attempts: 0  # Unlimited retries
+      window: 120s
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "3"
+        max-size: "10m"
+
+    networks:
+      - media-net
+
+  # Stash Application
+  stash:
+    image: stashapp/stash:latest
+    container_name: stash
+    hostname: stash
+    restart: unless-stopped
+
+    # Network configuration
+    ports:
+      - "9999:9999"  # HTTP interface
+
+    # Environment variables
+    environment:
+      - STASH_STASH=/data
+      - STASH_GENERATED=/generated
+      - STASH_METADATA=/metadata
+      - STASH_CACHE=/cache
+      - STASH_PORT=9999
+      - TZ=Etc/UTC
+
+      # Optional: Database configuration
+      # Leave empty for SQLite (default)
+      # Or configure PostgreSQL:
+      # - STASH_DB_TYPE=postgres
+      # - STASH_DB_HOST=postgres
+      # - STASH_DB_NAME=stash
+      # - STASH_DB_USER=${STASH_DB_USER:-stash}
+      # - STASH_DB_PASSWORD=${STASH_DB_PASSWORD:-changeme}
+
+      # Optional: 1Password integration
+      # - STASH_SESSION_SECRET=${STASH_SESSION_SECRET:-}
+
+    # Resource limits (for Always Free tier)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1500M
+        reservations:
+          cpus: '0.5'
+          memory: 1000M
+
+    # Volumes
+    volumes:
+      # Configuration and database
+      - stash_config:/root/.stash
+
+      # Data directories
+      - stash_data:/data
+      - stash_metadata:/metadata
+      - stash_cache:/cache
+      - stash_blobs:/blobs
+      - stash_generated:/generated
+
+      # Media library (read-only)
+      # Mount your content location:
+      # - /mnt/media:/stash-media:ro
+      # - /home/ubuntu/stash-content:/stash-content:ro
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9999"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    # Restart policy
+    restart_policy:
+      condition: on-failure
+      delay: 5s
+      max_attempts: 0  # Unlimited retries
+      window: 120s
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "3"
+        max-size: "10m"
+
+    networks:
+      - media-net
+
+    # Dependencies
+    depends_on:
+      - jellyfin  # Not strictly required, but useful for startup order
+
+  # Optional: PostgreSQL Database for Stash
+  # Uncomment to use PostgreSQL instead of SQLite
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: stash-postgres
+  #   environment:
+  #     - POSTGRES_DB=stash
+  #     - POSTGRES_USER=${STASH_DB_USER:-stash}
+  #     - POSTGRES_PASSWORD=${STASH_DB_PASSWORD:-changeme}
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U stash"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks:
+  #     - media-net
+  #   restart: unless-stopped
+
+# Volumes for persistent data
+volumes:
+  # Jellyfin volumes
+  jellyfin_config:
+    driver: local
+  jellyfin_cache:
+    driver: local
+
+  # Stash volumes
+  stash_config:
+    driver: local
+  stash_data:
+    driver: local
+  stash_metadata:
+    driver: local
+  stash_cache:
+    driver: local
+  stash_blobs:
+    driver: local
+  stash_generated:
+    driver: local
+
+  # PostgreSQL (if enabled)
+  # postgres_data:
+  #   driver: local
+
+# Network
+networks:
+  media-net:
+    driver: bridge
