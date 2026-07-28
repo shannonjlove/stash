@@ -1,0 +1,39 @@
+[Unit]
+Description=Stash Content Management System
+Documentation=https://docs.stashapp.cc/
+After=network-online.target media-network.network
+Wants=network-online.target
+
+[Container]
+Image=stashapp/stash:latest
+ContainerName=stash
+PublishPort=9999:9999
+Volume=stash_config:/home/stash/.stash:Z
+Volume=stash_data:/data:Z
+Volume=stash_metadata:/metadata:Z
+Volume=stash_cache:/cache:Z
+Volume=stash_blobs:/blobs:Z
+Volume=stash_generated:/generated:Z
+Volume=media-library:/media:ro,Z
+Environment=STASH_LOGGING_LEVEL=info
+Timezone=Etc/UTC
+Network=media-net
+HealthCmd=curl -f http://localhost:9999 || exit 1
+HealthInterval=30s
+HealthRetries=3
+HealthStartPeriod=60s
+HealthTimeout=10s
+Memory=1000M
+MemoryLimit=1000M
+CPUQuota=75%
+
+[Service]
+Type=notify
+Restart=on-failure
+RestartSec=5s
+RestartMaxAttempts=0
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

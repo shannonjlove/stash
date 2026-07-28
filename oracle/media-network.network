@@ -1,0 +1,14 @@
+[Unit]
+Description=Media Services Network
+Documentation=https://docs.podman.io/en/latest/markdown/podman-network.1.html
+Before=jellyfin.service stash.service
+
+[Network]
+NetworkName=media-net
+Driver=bridge
+Options=com.docker.network.bridge.enable_ip_masquerade=true
+IPRange=10.88.0.0/24
+Gateway=10.88.0.1
+
+[Install]
+WantedBy=multi-user.target
