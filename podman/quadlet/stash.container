@@ -1,0 +1,50 @@
+[Unit]
+Description=Stash - Self-hosted media server
+Documentation=https://docs.stashapp.cc
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=stashapp/stash:latest
+ContainerName=stash
+Restart=always
+RestartPolicy=on-failure
+RestartSec=10s
+
+# Network configuration
+PublishPort=9999:9999
+
+# Environment variables
+Environment=STASH_STASH=/data/
+Environment=STASH_GENERATED=/generated/
+Environment=STASH_METADATA=/metadata/
+Environment=STASH_CACHE=/cache/
+Environment=STASH_PORT=9999
+Environment=TZ=Etc/UTC
+
+# Volume mounts
+Volume=%h/.stash/config:/root/.stash:rw
+Volume=%h/.stash/data:/data:rw
+Volume=%h/.stash/metadata:/metadata:rw
+Volume=%h/.stash/cache:/cache:rw
+Volume=%h/.stash/blobs:/blobs:rw
+Volume=%h/.stash/generated:/generated:rw
+
+# Logging configuration
+LogDriver=journald
+
+# Resource limits (adjust as needed)
+# Memory=2g
+# MemorySwap=4g
+# CPUQuota=80%
+
+# Additional options
+RunInit=yes
+Pull=always
+
+[Service]
+Type=notify
+Notify=conmon
+
+[Install]
+WantedBy=default.target

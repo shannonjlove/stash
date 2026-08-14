@@ -1,0 +1,37 @@
+[Unit]
+Description=Jellyfin Media Server
+Documentation=https://jellyfin.org/docs/
+After=network-online.target media-network.network
+Wants=network-online.target
+
+[Container]
+Image=jellyfin/jellyfin:latest
+ContainerName=jellyfin
+PublishPort=8096:8096
+PublishPort=8920:8920
+Volume=jellyfin_config:/config:Z
+Volume=jellyfin_cache:/cache:Z
+Volume=media-library:/media:ro,Z
+Environment=JELLYFIN_LOG_LEVEL=info
+Environment=JELLYFIN_PUBLISH_SERVER_URL=http://localhost:8096
+Timezone=Etc/UTC
+Network=media-net
+HealthCmd=curl -f http://localhost:8096/web/index.html || exit 1
+HealthInterval=30s
+HealthRetries=3
+HealthStartPeriod=60s
+HealthTimeout=10s
+Memory=1500M
+MemoryLimit=1500M
+CPUQuota=75%
+
+[Service]
+Type=notify
+Restart=on-failure
+RestartSec=5s
+RestartMaxAttempts=0
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
