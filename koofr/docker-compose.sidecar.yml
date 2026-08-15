@@ -1,0 +1,107 @@
+# Fallback when the rclone Docker volume plugin is unavailable.
+# rclone mounts Koofr onto a host directory; Stash bind-mounts that path.
+# Requires: fuse3, /dev/fuse, user_allow_other in /etc/fuse.conf.
+
+services:
+  rclone:
+    image: rclone/rclone:latest
+    container_name: stash-rclone
+    hostname: stash-rclone
+    restart: unless-stopped
+    command:
+      - mount
+      - "${KOOFR_REMOTE:-koofr}:${KOOFR_PATH:-Stash/media}"
+      - /mnt/koofr
+      - --allow-other
+      - --allow-non-empty
+      - --vfs-cache-mode
+      - full
+      - --vfs-cache-max-size
+      - ${RCLONE_VFS_CACHE_MAX_SIZE:-10G}
+      - --vfs-read-ahead
+      - 128M
+      - --dir-cache-time
+      - 72h
+      - --poll-interval
+      - 1m
+      - --umask
+      - "002"
+      - --uid
+      - "0"
+      - --gid
+      - "0"
+    environment:
+      - TZ=${TZ:-Etc/UTC}
+    volumes:
+      - ./rclone.conf:/config/rclone/rclone.conf:ro
+      - ./data/rclone-vfs:/root/.cache/rclone
+      - type: bind
+        source: ${KOOFR_MOUNT_POINT:-/mnt/koofr}
+        target: /mnt/koofr
+        bind:
+          propagation: rshared
+    devices:
+      - /dev/fuse
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    healthcheck:
+      test: ["CMD-SHELL", "ls /mnt/koofr >/dev/null"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-file: "5"
+        max-size: "2m"
+
+  stash:
+    image: stashapp/stash:latest
+    container_name: stash
+    hostname: stash
+    restart: unless-stopped
+    depends_on:
+      rclone:
+        condition: service_healthy
+    ports:
+      - "${STASH_PORT:-9999}:9999"
+    environment:
+      - STASH_STASH=/data/
+      - STASH_GENERATED=/generated/
+      - STASH_METADATA=/metadata/
+      - STASH_CACHE=/cache/
+      - STASH_PORT=9999
+      - TZ=${TZ:-Etc/UTC}
+    volumes:
+      - ./data/config:/root/.stash
+      - type: bind
+        source: ${KOOFR_MOUNT_POINT:-/mnt/koofr}
+        target: /data
+        bind:
+          propagation: rslave
+      - ./data/metadata:/metadata
+      - ./data/cache:/cache
+      - ./data/blobs:/blobs
+      - ./data/generated:/generated
+    # FUSE bind mounts are invisible inside some Docker setups unless the
+    # consumer also has /dev/fuse (stashapp/stash#5137).
+    devices:
+      - /dev/fuse
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9999/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-file: "10"
+        max-size: "2m"

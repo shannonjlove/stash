@@ -1,0 +1,53 @@
+# Stash with the media library on Koofr via the rclone Docker volume plugin.
+# Requires: fuse3, rclone docker plugin, rclone.conf next to this file.
+# Fallback if the plugin cannot be installed: docker compose -f docker-compose.sidecar.yml up -d
+#
+# Local bind mounts hold the SQLite database, cache, blobs, and generated files.
+# Only the media library (/data) is the Koofr rclone volume.
+
+services:
+  stash:
+    image: stashapp/stash:latest
+    container_name: stash
+    hostname: stash
+    restart: unless-stopped
+    ports:
+      - "${STASH_PORT:-9999}:9999"
+    environment:
+      - STASH_STASH=/data/
+      - STASH_GENERATED=/generated/
+      - STASH_METADATA=/metadata/
+      - STASH_CACHE=/cache/
+      - STASH_PORT=9999
+      - TZ=${TZ:-Etc/UTC}
+    volumes:
+      - ./data/config:/root/.stash
+      - koofr_media:/data
+      - ./data/metadata:/metadata
+      - ./data/cache:/cache
+      - ./data/blobs:/blobs
+      - ./data/generated:/generated
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9999/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-file: "10"
+        max-size: "2m"
+
+volumes:
+  koofr_media:
+    driver: rclone
+    driver_opts:
+      remote: "${KOOFR_REMOTE:-koofr}:${KOOFR_PATH:-Stash/media}"
+      allow_other: "true"
+      vfs_cache_mode: full
+      vfs_cache_max_size: "${RCLONE_VFS_CACHE_MAX_SIZE:-10G}"
+      vfs_read_ahead: 128M
+      dir_cache_time: 72h
+      poll_interval: 1m
+      umask: "002"
