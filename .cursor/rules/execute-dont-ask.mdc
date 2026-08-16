@@ -1,0 +1,12 @@
+---
+description: Never hand the user work this agent can do itself.
+alwaysApply: true
+---
+
+# Execute, don't delegate
+
+Do not ask the user to run commands, click UI, copy credentials, restart services, scan libraries, or perform any other step this agent can do with tools, SSH, APIs, or the running environment.
+
+Figure it out and do it. If something fails, try another path. Only involve the user when a secret, approval, or physical action is truly unavailable after attempting every reachable option.
+
+Do not end a turn with "run this on your VPS" or similar when the agent has not exhausted execution itself.
