@@ -1,0 +1,51 @@
+# User-level rclone mount of Koofr. Installs as koofr-rclone.service.
+# Requires linger so the mount survives logout: loginctl enable-linger $USER
+
+[Unit]
+Description=rclone Koofr mount for Stash
+Documentation=https://rclone.org/koofr/
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/rclone/rclone:latest
+ContainerName=koofr-rclone
+HostName=koofr-rclone
+AutoUpdate=registry
+Pull=missing
+LogDriver=journald
+Timezone=local
+
+EnvironmentFile=%h/.stash/koofr.env
+EnvironmentFile=%h/.stash/koofr-rc.env
+Environment=TZ=Etc/UTC
+
+# ENTRYPOINT is rclone; these are mount arguments.
+Exec=mount koofr:Stash/media /mnt/koofr --allow-other --allow-non-empty --vfs-cache-mode full --vfs-cache-max-size 10G --vfs-read-ahead 128M --dir-cache-time 72h --poll-interval 1m --umask 002 --rc --rc-addr :5572 --rc-serve
+
+Volume=%h/.stash/rclone.conf:/config/rclone/rclone.conf:ro
+Volume=%h/.stash/rclone-vfs:/root/.cache/rclone:rw
+Volume=%h/.stash/koofr:/mnt/koofr:rshared
+
+PublishPort=127.0.0.1:5572:5572
+
+AddDevice=/dev/fuse
+AddCapability=SYS_ADMIN
+AppArmor=unconfined
+SecurityLabelDisable=true
+
+HealthCmd=ls /mnt/koofr
+HealthInterval=15s
+HealthTimeout=10s
+HealthRetries=8
+HealthStartPeriod=20s
+HealthOnFailure=restart
+Notify=healthy
+
+[Service]
+Restart=always
+RestartSec=5
+TimeoutStartSec=180
+
+[Install]
+WantedBy=default.target

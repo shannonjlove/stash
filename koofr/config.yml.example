@@ -1,0 +1,26 @@
+# First-run defaults for a Koofr-backed library.
+# deploy-koofr.sh copies this into the Stash config volume when no config.yml exists.
+#
+# Media lives on the rclone mount at /data. Database, cache, blobs, and generated
+# files stay on local Docker volumes — SQLite and transcodes do not belong on Koofr.
+
+stash:
+  - path: /data
+    excludeVideo: false
+    excludeImage: false
+
+generated: /generated
+metadata: /metadata
+cache: /cache
+blobs_path: /blobs
+blobs_storage: FILESYSTEM
+database: /root/.stash/stash-go.sqlite
+
+# oshash reads 64KB from each end of a file. MD5 would download every video from Koofr.
+calculate_md5: false
+video_file_naming_algorithm: OSHASH
+
+# One scan/generate worker keeps Koofr API usage and VFS cache pressure down.
+parallel_tasks: 1
+sequential_scanning: true
+preview_audio: true

@@ -1,0 +1,12 @@
+# Copy to rclone.conf (gitignored) or let deploy-koofr.sh generate it from .env.
+# The password must be rclone-obscured, not the raw Koofr app password:
+#   docker run --rm rclone/rclone obscure 'your-app-password'
+#
+# Create the app password at:
+#   https://app.koofr.net/app/admin/preferences/password
+
+[koofr]
+type = koofr
+provider = koofr
+user = you@example.com
+password = replace-with-rclone-obscured-password
