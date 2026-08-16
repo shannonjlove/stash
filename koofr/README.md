@@ -42,7 +42,7 @@ Docker Compose instead of quadlets:
 4. Upload media into Koofr folder `Stash/media` (Web UI, rclone, or WebDAV)
 5. In Stash: **Settings → Tasks → Scan**
 
-`setup-quadlet.sh system` installs `koofr-rclone.service` (Koofr mount + loopback RC API on `127.0.0.1:5572`) and `stash.service`, both `Restart=always`. The agent token is written to `/etc/stash/koofr-rc.env`. See [QUADLET.md](QUADLET.md).
+`setup-quadlet.sh system` is for a real systemd host. On this environment (no systemd), `./run-stack.sh` starts Stash with an in-container Koofr FUSE mount.
 
 `deploy-koofr.sh` is the Docker path: it prefers the [rclone Docker volume plugin](https://rclone.org/docker/) and falls back to `docker-compose.sidecar.yml`.
 

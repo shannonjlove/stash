@@ -18,7 +18,7 @@ database: /root/.stash/stash-go.sqlite
 
 # oshash reads 64KB from each end of a file. MD5 would download every video from Koofr.
 calculate_md5: false
-video_file_naming_algorithm: oshash
+video_file_naming_algorithm: OSHASH
 
 # One scan/generate worker keeps Koofr API usage and VFS cache pressure down.
 parallel_tasks: 1
