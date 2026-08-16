@@ -1,0 +1,19 @@
+[Unit]
+Description=rclone FUSE mount of Koofr at /mnt/koofr
+Documentation=https://rclone.org/koofr/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+Restart=always
+RestartSec=5
+EnvironmentFile=-/etc/stash/koofr-rc.env
+ExecStartPre=/bin/mkdir -p /mnt/koofr
+ExecStart=/usr/bin/rclone mount koofr:Stash/media /mnt/koofr --config /etc/stash/rclone.conf --allow-other --vfs-cache-mode full --vfs-cache-max-size 10G --vfs-read-ahead 128M --dir-cache-time 72h --poll-interval 1m --umask 002
+ExecStop=/bin/fusermount3 -uz /mnt/koofr
+TimeoutStartSec=90
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

@@ -2,7 +2,13 @@
 
 These units keep Stash running under systemd. rclone mounts Koofr as `/data`. Local disk holds SQLite, cache, blobs, and generated files.
 
-Quadlet files in `koofr/quadlet/` generate `koofr-rclone.service` and `stash.service`.
+Quadlet files in `koofr/quadlet/` generate:
+
+| Unit | Role |
+| --- | --- |
+| `koofr-rclone.service` | FUSE mount of Koofr at `/mnt/koofr` (system) or `~/.stash/koofr` (user) |
+| `koofr-rc.service` | rclone RC API on `127.0.0.1:5572` (read + write) |
+| `stash.service` | Stash UI on port 9999, library = Koofr mount |
 
 | Mode | Units | Starts | Survives logout |
 | --- | --- | --- | --- |
@@ -19,11 +25,19 @@ cp .env.example .env
 # User service (recommended on a personal machine)
 ./setup-quadlet.sh
 
-# Or system-wide on a VPS
+# Or system-wide on a VPS (always-on at boot)
 sudo ./setup-quadlet.sh system
 ```
 
-`setup-quadlet.sh` writes `rclone.conf`, creates `Stash/media` on Koofr, enables linger (user mode), and starts both units with `Restart=always`.
+`setup-quadlet.sh` writes `rclone.conf`, generates a `cursor-agent` RC API token in `koofr-rc.env`, creates `Stash/media` on Koofr, and starts the units with `Restart=always`.
+
+Agent API (loopback):
+
+```bash
+./koofr-agent.sh lsd
+./koofr-agent.sh lsd Stash/media
+./koofr-agent.sh rc operations/about fs=koofr:
+```
 
 ## Manual user install
 

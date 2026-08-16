@@ -127,27 +127,50 @@ ensure_rclone_conf() {
   fi
 }
 
+ensure_rc_env() {
+  print_section "Checking rclone RC API token"
+  local rc_env="${SCRIPT_DIR}/koofr-rc.env"
+  if [[ ! -f "${rc_env}" ]]; then
+    local token
+    token="$(openssl rand -base64 36 | tr -d '/+=' | head -c 40)"
+    umask 077
+    cat > "${rc_env}" <<EOF
+RCLONE_RC_USER=cursor-agent
+RCLONE_RC_PASS=${token}
+RCLONE_RC_ADDR=127.0.0.1:5572
+EOF
+    chmod 600 "${rc_env}"
+    print_success "Generated ${rc_env}"
+  else
+    print_success "Using existing ${rc_env}"
+  fi
+}
+
+rclone_koofr() {
+  if command -v rclone >/dev/null 2>&1; then
+    rclone --config "${CONF_FILE}" "$@"
+  else
+    local runtime=podman
+    command -v podman >/dev/null 2>&1 || runtime=docker
+    "${runtime}" run --rm \
+      -v "${CONF_FILE}:/config/rclone/rclone.conf:ro" \
+      docker.io/rclone/rclone:latest \
+      "$@"
+  fi
+}
+
 verify_koofr() {
   print_section "Verifying Koofr"
   local remote="${KOOFR_REMOTE:-koofr}"
   local path="${KOOFR_PATH:-Stash/media}"
   local parent
-  podman run --rm \
-    -v "${CONF_FILE}:/config/rclone/rclone.conf:ro" \
-    docker.io/rclone/rclone:latest \
-    lsd "${remote}:" >/dev/null
+  rclone_koofr lsd "${remote}:" >/dev/null
   print_success "Authenticated to Koofr"
   parent="$(dirname "${path}")"
   if [[ "${parent}" != "." ]]; then
-    podman run --rm \
-      -v "${CONF_FILE}:/config/rclone/rclone.conf:ro" \
-      docker.io/rclone/rclone:latest \
-      mkdir "${remote}:${parent}" || true
+    rclone_koofr mkdir "${remote}:${parent}" || true
   fi
-  podman run --rm \
-    -v "${CONF_FILE}:/config/rclone/rclone.conf:ro" \
-    docker.io/rclone/rclone:latest \
-    mkdir "${remote}:${path}" || true
+  rclone_koofr mkdir "${remote}:${path}" || true
   print_success "Remote folder ${remote}:${path} is ready"
 }
 
@@ -183,13 +206,16 @@ install_user() {
 
   install -m 600 "${CONF_FILE}" "${state}/rclone.conf"
   install -m 600 "${ENV_FILE}" "${state}/koofr.env"
+  install -m 600 "${SCRIPT_DIR}/koofr-rc.env" "${state}/koofr-rc.env"
   if [[ ! -f "${state}/config/config.yml" ]]; then
     cp "${SCRIPT_DIR}/config.yml.example" "${state}/config/config.yml"
   fi
 
   install -m 644 "${SCRIPT_DIR}/quadlet/koofr-rclone.container" "${dest}/koofr-rclone.container"
+  install -m 644 "${SCRIPT_DIR}/quadlet/koofr-rc.container" "${dest}/koofr-rc.container"
   install -m 644 "${SCRIPT_DIR}/quadlet/stash.container" "${dest}/stash.container"
   apply_unit_substitutions "${dest}/koofr-rclone.container"
+  apply_unit_substitutions "${dest}/koofr-rc.container"
   apply_unit_substitutions "${dest}/stash.container"
 
   if command -v loginctl >/dev/null 2>&1; then
@@ -203,7 +229,7 @@ install_user() {
   systemctl --user enable --now podman-auto-update.timer 2>/dev/null || true
   systemctl --user enable --now koofr-rclone.service
   systemctl --user enable --now stash.service
-  print_success "User units enabled: koofr-rclone.service stash.service"
+  print_success "User units enabled: koofr-rclone.service stash.service (RC API on 127.0.0.1:5572)"
 }
 
 install_system() {
@@ -223,20 +249,23 @@ install_system() {
 
   install -m 600 "${CONF_FILE}" /etc/stash/rclone.conf
   install -m 600 "${ENV_FILE}" /etc/stash/koofr.env
+  install -m 600 "${SCRIPT_DIR}/koofr-rc.env" /etc/stash/koofr-rc.env
   if [[ ! -f /var/lib/stash/config/config.yml ]]; then
     cp "${SCRIPT_DIR}/config.yml.example" /var/lib/stash/config/config.yml
   fi
 
   install -m 644 "${SCRIPT_DIR}/quadlet/koofr-rclone-system.container" "${dest}/koofr-rclone.container"
+  install -m 644 "${SCRIPT_DIR}/quadlet/koofr-rc-system.container" "${dest}/koofr-rc.container"
   install -m 644 "${SCRIPT_DIR}/quadlet/stash-system.container" "${dest}/stash.container"
   apply_unit_substitutions "${dest}/koofr-rclone.container"
+  apply_unit_substitutions "${dest}/koofr-rc.container"
   apply_unit_substitutions "${dest}/stash.container"
 
   systemctl daemon-reload
   systemctl enable --now podman-auto-update.timer 2>/dev/null || true
   systemctl enable --now koofr-rclone.service
   systemctl enable --now stash.service
-  print_success "System units enabled: koofr-rclone.service stash.service"
+  print_success "System units enabled: koofr-rclone.service stash.service (RC API on 127.0.0.1:5572)"
 }
 
 print_next_steps() {
@@ -246,11 +275,13 @@ print_next_steps() {
   echo "  UI:           http://localhost:${port}"
   echo "  Media remote: ${KOOFR_REMOTE:-koofr}:${KOOFR_PATH:-Stash/media}"
   if [[ "${MODE}" == "system" ]]; then
-    echo "  Status:       systemctl status stash.service koofr-rclone.service"
-    echo "  Logs:         journalctl -u stash.service -f"
+    echo "  Status:       systemctl status stash.service koofr-rclone.service koofr-rc.service"
+    echo "  Koofr API:    http://127.0.0.1:5572  (cursor-agent token in /etc/stash/koofr-rc.env)"
+    echo "  Logs:         journalctl -u koofr-rclone.service -f"
   else
-    echo "  Status:       systemctl --user status stash.service koofr-rclone.service"
-    echo "  Logs:         journalctl --user -u stash.service -f"
+    echo "  Status:       systemctl --user status stash.service koofr-rclone.service koofr-rc.service"
+    echo "  Koofr API:    http://127.0.0.1:5572  (cursor-agent token in ~/.stash/koofr-rc.env)"
+    echo "  Logs:         journalctl --user -u koofr-rclone.service -f"
   fi
 }
 
@@ -270,6 +301,7 @@ main() {
   ensure_fuse
   ensure_env
   ensure_rclone_conf
+  ensure_rc_env
   verify_koofr
 
   if [[ "${MODE}" == "system" ]]; then

@@ -17,14 +17,17 @@ LogDriver=journald
 Timezone=local
 
 EnvironmentFile=%h/.stash/koofr.env
+EnvironmentFile=%h/.stash/koofr-rc.env
 Environment=TZ=Etc/UTC
 
 # ENTRYPOINT is rclone; these are mount arguments.
-Exec=mount koofr:Stash/media /mnt/koofr --allow-other --allow-non-empty --vfs-cache-mode full --vfs-cache-max-size 10G --vfs-read-ahead 128M --dir-cache-time 72h --poll-interval 1m --umask 002
+Exec=mount koofr:Stash/media /mnt/koofr --allow-other --allow-non-empty --vfs-cache-mode full --vfs-cache-max-size 10G --vfs-read-ahead 128M --dir-cache-time 72h --poll-interval 1m --umask 002 --rc --rc-addr :5572 --rc-serve
 
 Volume=%h/.stash/rclone.conf:/config/rclone/rclone.conf:ro
 Volume=%h/.stash/rclone-vfs:/root/.cache/rclone:rw
 Volume=%h/.stash/koofr:/mnt/koofr:rshared
+
+PublishPort=127.0.0.1:5572:5572
 
 AddDevice=/dev/fuse
 AddCapability=SYS_ADMIN

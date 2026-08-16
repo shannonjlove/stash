@@ -17,13 +17,17 @@ LogDriver=journald
 Timezone=local
 
 EnvironmentFile=/etc/stash/koofr.env
+EnvironmentFile=/etc/stash/koofr-rc.env
 Environment=TZ=Etc/UTC
 
-Exec=mount koofr:Stash/media /mnt/koofr --allow-other --allow-non-empty --vfs-cache-mode full --vfs-cache-max-size 10G --vfs-read-ahead 128M --dir-cache-time 72h --poll-interval 1m --umask 002
+# ENTRYPOINT is rclone. --rc exposes a loopback read/write API at :5572.
+Exec=mount koofr:Stash/media /mnt/koofr --allow-other --allow-non-empty --vfs-cache-mode full --vfs-cache-max-size 10G --vfs-read-ahead 128M --dir-cache-time 72h --poll-interval 1m --umask 002 --rc --rc-addr :5572 --rc-serve
 
 Volume=/etc/stash/rclone.conf:/config/rclone/rclone.conf:ro
 Volume=/var/lib/stash/rclone-vfs:/root/.cache/rclone:rw
 Volume=/mnt/koofr:/mnt/koofr:rshared
+
+PublishPort=127.0.0.1:5572:5572
 
 AddDevice=/dev/fuse
 AddCapability=SYS_ADMIN

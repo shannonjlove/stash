@@ -1,5 +1,7 @@
 .env
 rclone.conf
+koofr-rc.env
+agent-token.env
 *.log
 config.yml
 data/

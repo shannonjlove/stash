@@ -1,0 +1,42 @@
+# User-level rclone RC API for Koofr. Installs as koofr-rc.service.
+
+[Unit]
+Description=rclone RC API for Koofr
+Documentation=https://rclone.org/rc/
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/rclone/rclone:latest
+ContainerName=koofr-rc
+HostName=koofr-rc
+AutoUpdate=registry
+Pull=missing
+LogDriver=journald
+Timezone=local
+
+EnvironmentFile=%h/.stash/koofr.env
+EnvironmentFile=%h/.stash/koofr-rc.env
+Environment=TZ=Etc/UTC
+
+Exec=rcd --rc-addr :5572 --rc-serve
+
+Volume=%h/.stash/rclone.conf:/config/rclone/rclone.conf:ro
+
+PublishPort=127.0.0.1:5572:5572
+
+HealthCmd=/bin/sh -c "rclone rc rc/noop >/dev/null"
+HealthInterval=20s
+HealthTimeout=10s
+HealthRetries=5
+HealthStartPeriod=15s
+HealthOnFailure=restart
+Notify=healthy
+
+[Service]
+Restart=always
+RestartSec=5
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

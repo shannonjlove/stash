@@ -26,10 +26,10 @@ Do not put the SQLite database or generated files on Koofr. Network filesystems 
 ```bash
 cd koofr
 cp .env.example .env
-# edit .env: KOOFR_USER and KOOFR_APP_PASSWORD
-chmod +x setup-quadlet.sh setup-rclone.sh deploy-koofr.sh
-./setup-quadlet.sh          # user service + linger (survives logout)
-# sudo ./setup-quadlet.sh system   # boot-time system service
+# KOOFR_USER is the Koofr account email (not the app-password name)
+# KOOFR_APP_PASSWORD is the 16-character Koofr app password
+chmod +x setup-quadlet.sh setup-rclone.sh koofr-agent.sh
+sudo ./setup-quadlet.sh system   # boot-time system units, always on
 ```
 
 Docker Compose instead of quadlets:
@@ -42,7 +42,7 @@ Docker Compose instead of quadlets:
 4. Upload media into Koofr folder `Stash/media` (Web UI, rclone, or WebDAV)
 5. In Stash: **Settings → Tasks → Scan**
 
-`setup-quadlet.sh` writes `rclone.conf`, creates the remote folder, enables linger (user mode), and starts `koofr-rclone.service` plus `stash.service` with `Restart=always`. See [QUADLET.md](QUADLET.md).
+`setup-quadlet.sh system` installs `koofr-rclone.service` (Koofr mount + loopback RC API on `127.0.0.1:5572`) and `stash.service`, both `Restart=always`. The agent token is written to `/etc/stash/koofr-rc.env`. See [QUADLET.md](QUADLET.md).
 
 `deploy-koofr.sh` is the Docker path: it prefers the [rclone Docker volume plugin](https://rclone.org/docker/) and falls back to `docker-compose.sidecar.yml`.
 

@@ -6,11 +6,11 @@ Koofr stores files. It does not run containers. You still need a machine with Po
 
 ```
 Linux host (Podman + systemd)
-├── stash.service          :9999   Restart=always
-│   ├── /data              → Koofr:Stash/media
-│   ├── /root/.stash       → ~/.stash/config
-│   └── /generated         → ~/.stash/generated
-└── koofr-rclone.service           linger / boot
+├── stash.service               :9999   Restart=always, WantedBy=multi-user.target
+│   ├── /data                   → Koofr:Stash/media (/mnt/koofr)
+│   ├── /root/.stash            → /var/lib/stash/config
+│   └── /generated              → /var/lib/stash/generated
+└── koofr-rclone.service        mount + RC API 127.0.0.1:5572
 ```
 
 ## 15-minute setup
@@ -23,9 +23,8 @@ Linux host (Podman + systemd)
 git clone https://github.com/shannonjlove/stash.git
 cd stash/koofr
 cp .env.example .env
-# set KOOFR_USER (email) and KOOFR_APP_PASSWORD
-./setup-quadlet.sh
-# sudo ./setup-quadlet.sh system
+# set KOOFR_USER to the Koofr account email and KOOFR_APP_PASSWORD to the 16-char app password
+sudo ./setup-quadlet.sh system
 ```
 
 Docker Compose alternative: `./deploy-koofr.sh`. Quadlet reference: [koofr/QUADLET.md](koofr/QUADLET.md).

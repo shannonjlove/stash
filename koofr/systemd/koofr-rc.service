@@ -1,0 +1,16 @@
+[Unit]
+Description=rclone RC API for Koofr
+Documentation=https://rclone.org/rc/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5
+EnvironmentFile=/etc/stash/koofr-rc.env
+ExecStart=/usr/bin/rclone rcd --config /etc/stash/rclone.conf --rc-addr ${RCLONE_RC_ADDR} --rc-serve
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target
