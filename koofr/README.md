@@ -1,17 +1,19 @@
 # Stash on Koofr
 
-Run [Stash](https://github.com/stashapp/stash) on any Linux host with Docker, and keep the **media library** on [Koofr](https://koofr.eu/) cloud storage.
+Run [Stash](https://github.com/stashapp/stash) on any Linux host, and keep the **media library** on [Koofr](https://koofr.eu/) cloud storage.
 
-Koofr is object/file storage, not a compute host. Stash still runs in Docker on a VPS, NAS, or local machine. rclone mounts your Koofr folder as `/data` inside Stash.
+Koofr is object/file storage, not a compute host. Stash still runs in a container on a VPS, NAS, or local machine. rclone mounts your Koofr folder as `/data` inside Stash.
+
+For an always-on install, use **Podman quadlets** (`./setup-quadlet.sh`). Docker Compose remains available as an alternative.
 
 ## What lives where
 
 | Path | Location | Why |
 | --- | --- | --- |
 | `/data` | Koofr (`Stash/media` by default) | Videos and images |
-| `/root/.stash` | Local `koofr/data/config` | `config.yml` and SQLite |
-| `/generated` | Local `koofr/data/generated` | Previews, sprites, transcodes |
-| `/cache`, `/blobs`, `/metadata` | Local `koofr/data/*` | Fast local writes |
+| `/root/.stash` | `~/.stash/config` (quadlet) or `koofr/data/config` (Compose) | `config.yml` and SQLite |
+| `/generated` | `~/.stash/generated` or `koofr/data/generated` | Previews, sprites, transcodes |
+| `/cache`, `/blobs`, `/metadata` | matching local dirs | Fast local writes |
 
 Do not put the SQLite database or generated files on Koofr. Network filesystems corrupt SQLite, and transcodes are write-heavy.
 
@@ -25,7 +27,14 @@ Do not put the SQLite database or generated files on Koofr. Network filesystems 
 cd koofr
 cp .env.example .env
 # edit .env: KOOFR_USER and KOOFR_APP_PASSWORD
-chmod +x deploy-koofr.sh setup-rclone.sh
+chmod +x setup-quadlet.sh setup-rclone.sh deploy-koofr.sh
+./setup-quadlet.sh          # user service + linger (survives logout)
+# sudo ./setup-quadlet.sh system   # boot-time system service
+```
+
+Docker Compose instead of quadlets:
+
+```bash
 ./deploy-koofr.sh
 ```
 
@@ -33,7 +42,9 @@ chmod +x deploy-koofr.sh setup-rclone.sh
 4. Upload media into Koofr folder `Stash/media` (Web UI, rclone, or WebDAV)
 5. In Stash: **Settings → Tasks → Scan**
 
-`deploy-koofr.sh` installs Docker and fuse3 if needed, writes `rclone.conf`, creates the remote folder, then starts Stash. It prefers the [rclone Docker volume plugin](https://rclone.org/docker/). If plugin install fails, it uses `docker-compose.sidecar.yml`.
+`setup-quadlet.sh` writes `rclone.conf`, creates the remote folder, enables linger (user mode), and starts `koofr-rclone.service` plus `stash.service` with `Restart=always`. See [QUADLET.md](QUADLET.md).
+
+`deploy-koofr.sh` is the Docker path: it prefers the [rclone Docker volume plugin](https://rclone.org/docker/) and falls back to `docker-compose.sidecar.yml`.
 
 ## Manual steps
 
@@ -63,14 +74,16 @@ docker compose -f docker-compose.sidecar.yml up -d
 
 | File | Purpose |
 | --- | --- |
+| `quadlet/*.container` | Always-on Podman units |
+| `setup-quadlet.sh` | Install quadlets (user or system) |
+| `QUADLET.md` | Quadlet operations |
 | `docker-compose.yml` | Stash + rclone volume plugin |
 | `docker-compose.sidecar.yml` | Stash + rclone FUSE sidecar |
 | `.env.example` | Koofr credentials and paths |
 | `rclone.conf.example` | rclone remote template |
 | `config.yml.example` | oshash / sequential scan defaults |
-| `deploy-koofr.sh` | End-to-end install |
+| `deploy-koofr.sh` | Docker install |
 | `setup-rclone.sh` | Build `rclone.conf` from `.env` |
-| `stash-koofr.service` | Example systemd unit |
 
 `.env` and `rclone.conf` are gitignored.
 
@@ -91,10 +104,9 @@ Koofr WebDAV is `https://app.koofr.net/dav/Koofr` with your email and the same a
 ## Operations
 
 ```bash
-docker compose ps
-docker compose logs -f stash
-docker run --rm -v "$PWD/rclone.conf:/config/rclone/rclone.conf:ro" rclone/rclone:latest lsd koofr:
-docker run --rm -v "$PWD/rclone.conf:/config/rclone/rclone.conf:ro" rclone/rclone:latest ls koofr:Stash/media
+systemctl --user status stash.service koofr-rclone.service
+journalctl --user -u stash.service -f
+podman run --rm -v "$PWD/rclone.conf:/config/rclone/rclone.conf:ro" docker.io/rclone/rclone:latest lsd koofr:
 ```
 
 Stop:

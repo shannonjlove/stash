@@ -1,0 +1,57 @@
+# User-level Stash. Installs as stash.service and stays up with linger + Restart=always.
+# Media library is the Koofr FUSE mount from koofr-rclone.service.
+
+[Unit]
+Description=Stash media server (Koofr library)
+Documentation=https://docs.stashapp.cc
+After=network-online.target koofr-rclone.service
+Wants=network-online.target
+Requires=koofr-rclone.service
+
+[Container]
+Image=docker.io/stashapp/stash:latest
+ContainerName=stash
+HostName=stash
+AutoUpdate=registry
+Pull=missing
+LogDriver=journald
+Timezone=local
+RunInit=true
+
+PublishPort=9999:9999
+
+EnvironmentFile=%h/.stash/koofr.env
+Environment=STASH_STASH=/data/
+Environment=STASH_GENERATED=/generated/
+Environment=STASH_METADATA=/metadata/
+Environment=STASH_CACHE=/cache/
+Environment=STASH_PORT=9999
+Environment=TZ=Etc/UTC
+
+Volume=%h/.stash/config:/root/.stash:rw
+Volume=%h/.stash/koofr:/data:rslave
+Volume=%h/.stash/metadata:/metadata:rw
+Volume=%h/.stash/cache:/cache:rw
+Volume=%h/.stash/blobs:/blobs:rw
+Volume=%h/.stash/generated:/generated:rw
+
+# FUSE bind mounts are invisible in some containers without /dev/fuse (stashapp/stash#5137).
+AddDevice=/dev/fuse
+AddCapability=SYS_ADMIN
+AppArmor=unconfined
+SecurityLabelDisable=true
+
+HealthCmd=python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9999/')"
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=5
+HealthStartPeriod=60s
+
+[Service]
+Restart=always
+RestartSec=5
+TimeoutStartSec=180
+ExecStartPre=/bin/bash -c 'for i in $(seq 1 60); do ls "%h/.stash/koofr" >/dev/null 2>&1 && exit 0; sleep 2; done; echo "Koofr mount not ready at %h/.stash/koofr"; exit 1'
+
+[Install]
+WantedBy=default.target

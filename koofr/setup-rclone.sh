@@ -27,13 +27,18 @@ if [[ -z "${KOOFR_APP_PASSWORD:-}" || "${KOOFR_APP_PASSWORD}" == "replace-with-k
   exit 1
 fi
 
-if ! command -v docker >/dev/null 2>&1; then
-  echo "docker is required to obscure the Koofr app password." >&2
+RUNTIME=""
+if command -v podman >/dev/null 2>&1; then
+  RUNTIME=podman
+elif command -v docker >/dev/null 2>&1; then
+  RUNTIME=docker
+else
+  echo "podman or docker is required to obscure the Koofr app password." >&2
   exit 1
 fi
 
-echo "Obscuring Koofr app password with rclone..."
-OBSCURED="$(docker run --rm rclone/rclone:latest obscure "${KOOFR_APP_PASSWORD}")"
+echo "Obscuring Koofr app password with rclone (${RUNTIME})..."
+OBSCURED="$("${RUNTIME}" run --rm docker.io/rclone/rclone:latest obscure "${KOOFR_APP_PASSWORD}")"
 
 REMOTE_NAME="${KOOFR_REMOTE:-koofr}"
 

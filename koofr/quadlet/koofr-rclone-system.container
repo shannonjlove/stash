@@ -1,0 +1,47 @@
+# System-wide rclone mount of Koofr. Copy to /etc/containers/systemd/koofr-rclone.container
+# so the generated unit is koofr-rclone.service.
+
+[Unit]
+Description=rclone Koofr mount for Stash
+Documentation=https://rclone.org/koofr/
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/rclone/rclone:latest
+ContainerName=koofr-rclone
+HostName=koofr-rclone
+AutoUpdate=registry
+Pull=missing
+LogDriver=journald
+Timezone=local
+
+EnvironmentFile=/etc/stash/koofr.env
+Environment=TZ=Etc/UTC
+
+Exec=mount koofr:Stash/media /mnt/koofr --allow-other --allow-non-empty --vfs-cache-mode full --vfs-cache-max-size 10G --vfs-read-ahead 128M --dir-cache-time 72h --poll-interval 1m --umask 002
+
+Volume=/etc/stash/rclone.conf:/config/rclone/rclone.conf:ro
+Volume=/var/lib/stash/rclone-vfs:/root/.cache/rclone:rw
+Volume=/mnt/koofr:/mnt/koofr:rshared
+
+AddDevice=/dev/fuse
+AddCapability=SYS_ADMIN
+AppArmor=unconfined
+SecurityLabelDisable=true
+
+HealthCmd=ls /mnt/koofr
+HealthInterval=15s
+HealthTimeout=10s
+HealthRetries=8
+HealthStartPeriod=20s
+HealthOnFailure=restart
+Notify=healthy
+
+[Service]
+Restart=always
+RestartSec=5
+TimeoutStartSec=180
+
+[Install]
+WantedBy=multi-user.target
