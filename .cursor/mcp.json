@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "sjl-hostinger": {
+      "url": "https://mcp.hostinger.com",
+      "auth": {
+        "CLIENT_ID": "01a0058b-f758-7118-a8b2-3408a283d02d",
+        "scopes": [
+          "mcp:use"
+        ]
+      }
+    },
+    "firecrawl": {
+      "url": "https://mcp.firecrawl.dev/v2/mcp",
+      "headers": {
+        "Authorization": "Bearer ${env:FIRECRAWL_API_KEY}"
+      }
+    }
+  }
+}
