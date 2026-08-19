@@ -64,3 +64,7 @@ cd koofr
 `apply-para-layout.sh` is idempotent and uses rclone `DirMove` (server-side rename). It never runs `sync --delete`.
 
 Machine-readable map: [para-codes.yaml](para-codes.yaml).
+
+## Mountain Duck (koofr2 / IDrive e2)
+
+ShaJe'sMBA mounts live in [mountainduck/](mountainduck/). `koofr2` is WebDAV to `https://app.koofr.net/dav/Koofr` (not a second Koofr account). IDrive e2 bookmarks use the real S3 bucket names and path-style requests; they do not use the `__idrive-e2` Koofr folder names.

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>Protocol</key>
+        <string>davs</string>
+        <key>Provider</key>
+        <string>lovecloud-koofr</string>
+        <key>Nickname</key>
+        <string>Koofr2</string>
+        <key>Hostname</key>
+        <string>app.koofr.net</string>
+        <key>Port</key>
+        <string>443</string>
+        <key>Username</key>
+        <string>shannonjlove@mac.com</string>
+        <key>Path</key>
+        <string>/dav/Koofr</string>
+        <key>UUID</key>
+        <string>5ee9f60b-4f05-488d-979a-ffd79d516fa8</string>
+        <key>Comment</key>
+        <string>ShaJe'sMBA Mountain Duck mount for the LoveCloud six-digit PARA tree. Password is a dedicated Koofr app password (mountainduck-koofr2), stored in Keychain — not in this file.</string>
+    </dict>
+</plist>

@@ -5,3 +5,4 @@ agent-token.env
 *.log
 config.yml
 data/
+mountainduck/generated/
