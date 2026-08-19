@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>Protocol</key>
+        <string>davs</string>
+        <key>Provider</key>
+        <string>lovecloud-koofr</string>
+        <key>Nickname</key>
+        <string>Stash-Koofr</string>
+        <key>Hostname</key>
+        <string>app.koofr.net</string>
+        <key>Port</key>
+        <string>443</string>
+        <key>Username</key>
+        <string>shannonjlove@mac.com</string>
+        <key>Path</key>
+        <string>/dav/Koofr/060000_PRIVATE-MEDIA__koofr/Stash/media</string>
+        <key>UUID</key>
+        <string>27585aca-8e65-442c-a136-719c28a5e44c</string>
+        <key>Comment</key>
+        <string>Optional. Stash library only. Prefer the Koofr2 root bookmark unless this volume is needed in Finder.</string>
+    </dict>
+</plist>
